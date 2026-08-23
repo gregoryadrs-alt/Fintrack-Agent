@@ -1,0 +1,14 @@
+services:
+  n8n:
+    image: docker.n8n.io/n8nio/n8n
+    container_name: n8n_telegram
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "5555:5555"
+    volumes:
+      - n8n_telegram_data:/home/node/.n8n
+      - ./local-files:/files
+volumes:
+  n8n_telegram_data:

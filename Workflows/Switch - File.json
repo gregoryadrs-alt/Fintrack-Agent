@@ -1,0 +1,410 @@
+{
+  "name": "Switch - File",
+  "nodes": [
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "combinator": "and",
+                "conditions": [
+                  {
+                    "id": "2d5b2f97-1f8f-48d9-8c81-515e77996efe",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    },
+                    "leftValue": "={{ $json.message_text }}",
+                    "rightValue": ""
+                  }
+                ]
+              },
+              "renameOutput": true,
+              "outputKey": "Text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "c187e805-bf02-4328-ab46-d2b0803f7734",
+                    "leftValue": "={{ $json.message_voice_file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Voice"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "6df6bde5-01a2-4ae9-895a-c632008e2e39",
+                    "leftValue": "={{ $json.message_photo?.[0]?.file_id }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "string",
+                      "operation": "exists",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Photo"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra"
+        }
+      },
+      "id": "9538c386-ddbf-4c27-926a-fda18636fd2b",
+      "name": "Switch",
+      "type": "n8n-nodes-base.switch",
+      "position": [
+        432,
+        832
+      ],
+      "typeVersion": 3.2
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $('Start').item.json.message_from_id }}",
+        "text": "Maaf,kami tidak melayani request ini",
+        "additionalFields": {
+          "appendAttribution": true,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "6015ce0e-b141-49cf-a991-088e2383ba17",
+      "name": "Send Fallback Message",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        736,
+        1200
+      ],
+      "webhookId": "54a95e4f-38b0-4992-a5c1-81791dba21ab",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "yaRp5q17mnGuLHF8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// 1. Ambil payload input dari node sebelumnya\nconst input = $input.first()?.json || {};\n\n// 2. Ambil data pesan teks langsung dari Telegram\nconst telegramText = $('Start').first()?.json._firstItem?.message?.text;\n\n// 3. Ekstraksi teks dari struktur output Gemini Vision / Transcribe / Standard\nconst extractedText = \n  input.content?.parts?.[0]?.text ||   // Path dari Analyze an image (Gemini)\n  input.text || \n  input.transcription || \n  input.text_output || \n  input.output ||\n  input.response?.text ||\n  input.candidates?.[0]?.content?.parts?.[0]?.text;\n\n// 4. Tentukan teks akhir\nlet promptText = telegramText || extractedText || '';\n\n// 5. Metadata Telegram\nconst triggerData = $('Start').first()?.json._firstItem?.message || {};\nconst chatId = triggerData.chat?.id || input.chat_id || 0;\nconst userId = triggerData.from?.id || input.user_id || 0;\nconst userName = triggerData.from?.first_name || input.user_name || 'User';\n\nreturn [\n  {\n    json: {\n      chat_id: chatId,\n      user_id: userId,\n      user_name: userName,\n      user_prompt: String(promptText).trim(),\n      timestamp: new Date().toISOString()\n    }\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1168,
+        640
+      ],
+      "id": "967ce152-3fdb-4029-b948-fc9432ada9cd",
+      "name": "prepare data"
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $('Start').item.json.message_voice_file_id }}",
+        "additionalFields": {}
+      },
+      "id": "f22f3406-da1b-4254-a657-910edbb96d34",
+      "name": "Get a Voice File",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        736,
+        864
+      ],
+      "webhookId": "e3f61732-60a5-4116-8350-18f853286b1d",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "yaRp5q17mnGuLHF8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "modelId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "models/gemini-2.5-flash",
+          "cachedResultName": "models/gemini-2.5-flash"
+        },
+        "inputType": "binary",
+        "options": {}
+      },
+      "id": "3a45d430-7dc5-446d-ae3c-a4502c442532",
+      "name": "Transcribe a recording",
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "position": [
+        912,
+        832
+      ],
+      "typeVersion": 1,
+      "credentials": {
+        "googlePalmApi": {
+          "id": "6Zxfvr2NRmEXQKgF",
+          "name": "Google Gemini(PaLM) Api account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "file",
+        "fileId": "={{ $json.message.photo.slice(-1)[0].file_id }}",
+        "additionalFields": {}
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        736,
+        1008
+      ],
+      "id": "5c03f52b-2226-4be3-b613-e7f16e9b9b42",
+      "name": "Get a Photo File",
+      "webhookId": "987bcca4-ab52-4ffe-90ac-b8a178c07399",
+      "credentials": {
+        "telegramApi": {
+          "id": "yaRp5q17mnGuLHF8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "image",
+        "operation": "analyze",
+        "modelId": {
+          "__rl": true,
+          "value": "models/gemini-3.5-flash-lite",
+          "mode": "list",
+          "cachedResultName": "models/gemini-3.5-flash-lite"
+        },
+        "text": "Analyze this receipt, invoice, or payment proof image.\nExtract the transaction details and summarize it into a single natural sentence in Indonesian so the financial assistant can record it.\n\nFormat example:\n\"Catat pengeluaran beli [nama barang/merchant] sebesar [total nominal angka tanpa titik/koma] kategori [Food/Shopping/Transportation/dll] metode [QRIS/Cash/Debit/dll] tanggal [YYYY-MM-DD jika tertera]\"\n\nIf it is income/transfer in proof, format:\n\"Catat pemasukan dari [pengirim] sebesar [nominal] kategori Income metode Transfer tanggal [YYYY-MM-DD]\"\n\nIf the image is not a financial receipt/proof, simply respond with: \"Bukan bukti transaksi\".",
+        "inputType": "binary",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.googleGemini",
+      "typeVersion": 1.2,
+      "position": [
+        960,
+        1008
+      ],
+      "id": "5809d501-b3a6-4c51-8835-c069a7e99f4e",
+      "name": "Analyze an image",
+      "credentials": {
+        "googlePalmApi": {
+          "id": "24lTOA7vdp2cm8GL",
+          "name": "Google Gemini(PaLM) Api account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "2085c108-5cf7-4834-882c-61a9485ec23e",
+              "name": "user_prompt",
+              "value": "={{ $json.user_prompt }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1376,
+        640
+      ],
+      "id": "e0fac244-6c3e-4fe2-80a7-a8b1f15cc1ff",
+      "name": "Return"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "message_text",
+              "type": "any"
+            },
+            {
+              "name": "message_voice_file_id",
+              "type": "any"
+            },
+            {
+              "name": "message_photo",
+              "type": "any"
+            },
+            {
+              "name": "message_from_id",
+              "type": "any"
+            },
+            {
+              "name": "_firstItem",
+              "type": "any"
+            }
+          ]
+        }
+      },
+      "id": "648c2741-0087-4ba2-8b40-40d57a91c954",
+      "typeVersion": 1.1,
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "position": [
+        224,
+        832
+      ]
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "prepare data",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a Voice File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get a Photo File",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send Fallback Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a Voice File": {
+      "main": [
+        [
+          {
+            "node": "Transcribe a recording",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcribe a recording": {
+      "main": [
+        [
+          {
+            "node": "prepare data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get a Photo File": {
+      "main": [
+        [
+          {
+            "node": "Analyze an image",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Analyze an image": {
+      "main": [
+        [
+          {
+            "node": "prepare data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Start": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "prepare data": {
+      "main": [
+        [
+          {
+            "node": "Return",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "47a5d658-d662-4aa3-a1b9-b01d235c2c4c",
+  "meta": {
+    "instanceId": "dfd40cd506e530cda67f68db5d40ba068026f23d4480b016da93797e0f70ab92"
+  },
+  "nodeGroups": [],
+  "id": "1reLuQSo09Bqmt7b",
+  "tags": []
+}

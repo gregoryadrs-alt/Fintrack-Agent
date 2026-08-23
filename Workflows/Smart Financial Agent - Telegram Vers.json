@@ -1,0 +1,279 @@
+{
+  "name": "Smart Financial Agent - Telegram Vers",
+  "nodes": [
+    {
+      "parameters": {
+        "chatId": "={{ $('Telegram Bot Trigger').item.json.message.from.id }}",
+        "text": "={{ $json.output }}",
+        "additionalFields": {
+          "appendAttribution": false,
+          "disable_web_page_preview": false,
+          "parse_mode": "HTML"
+        }
+      },
+      "id": "100cd3b2-1c63-4b76-b44b-f909ef943bfb",
+      "name": "Send Response",
+      "type": "n8n-nodes-base.telegram",
+      "position": [
+        1456,
+        864
+      ],
+      "webhookId": "54a95e4f-38b0-4992-a5c1-81791dba21ab",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "yaRp5q17mnGuLHF8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "updates": [
+          "message",
+          "*"
+        ],
+        "additionalFields": {}
+      },
+      "id": "6154b55c-b880-472c-9e96-cef4e59461d4",
+      "name": "Telegram Bot Trigger",
+      "type": "n8n-nodes-base.telegramTrigger",
+      "position": [
+        208,
+        864
+      ],
+      "webhookId": "3fb3235c-eaa7-421e-a3d2-90cc42e88f1e",
+      "typeVersion": 1.2,
+      "credentials": {
+        "telegramApi": {
+          "id": "yaRp5q17mnGuLHF8",
+          "name": "Telegram account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "1reLuQSo09Bqmt7b",
+          "mode": "list",
+          "cachedResultUrl": "/workflow/1reLuQSo09Bqmt7b",
+          "cachedResultName": "Switch - File"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "message_text": "={{ $json.message.text }}",
+            "message_voice_file_id": "={{ $('Telegram Bot Trigger').item.json.message.voice.file_id }}",
+            "message_photo": "={{ $json.message.photo }}",
+            "message_from_id": "={{ $('Telegram Bot Trigger').item.json.message.from.id }}",
+            "_firstItem": "={{ $('Telegram Bot Trigger').first()?.json }}"
+          },
+          "matchingColumns": [
+            "message_text",
+            "message_voice_file_id",
+            "message_photo",
+            "message_from_id",
+            "_firstItem"
+          ],
+          "schema": [
+            {
+              "id": "message_text",
+              "displayName": "message_text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message_voice_file_id",
+              "displayName": "message_voice_file_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message_photo",
+              "displayName": "message_photo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message_from_id",
+              "displayName": "message_from_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "_firstItem",
+              "displayName": "_firstItem",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        592,
+        864
+      ],
+      "name": "Call Switch - File",
+      "id": "5f185c3f-16f0-4c18-9285-5c05fba123b9"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "AAVMxWk7n8if0Of8",
+          "mode": "list"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "user_prompt": "={{ $json.user_prompt }}",
+            "message_from_id": "={{ $('Telegram Bot Trigger').item.json.message.from.id }}"
+          },
+          "matchingColumns": [
+            "user_prompt",
+            "message_from_id"
+          ],
+          "schema": [
+            {
+              "id": "user_prompt",
+              "displayName": "user_prompt",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "message_from_id",
+              "displayName": "message_from_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        1008,
+        864
+      ],
+      "name": "Call Financial Agent",
+      "id": "db600aef-6d87-4297-a8cd-d27fc7500e3f"
+    }
+  ],
+  "pinData": {
+    "Telegram Bot Trigger": [
+      {
+        "json": {
+          "update_id": 28976240,
+          "message": {
+            "message_id": 72,
+            "from": {
+              "id": 1644304302,
+              "is_bot": false,
+              "first_name": "Gregory",
+              "last_name": "Adrianus",
+              "username": "grxgry123",
+              "language_code": "en"
+            },
+            "chat": {
+              "id": 1644304302,
+              "first_name": "Gregory",
+              "last_name": "Adrianus",
+              "username": "grxgry123",
+              "type": "private"
+            },
+            "date": 1787454400,
+            "voice": {
+              "duration": 4,
+              "mime_type": "audio/ogg",
+              "file_id": "AwACAgUAAxkBAANIaopjwJ2jwMRY0rBKHzXGtH6iJG4AAs8cAAI_RFBUhcA_Xz3EY6A9BA",
+              "file_unique_id": "AgADzxwAAj9EUFQ",
+              "file_size": 86816
+            }
+          }
+        },
+        "pairedItem": {
+          "item": 0
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Telegram Bot Trigger": {
+      "main": [
+        [
+          {
+            "node": "Call Switch - File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Switch - File": {
+      "main": [
+        [
+          {
+            "node": "Call Financial Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call Financial Agent": {
+      "main": [
+        [
+          {
+            "node": "Send Response",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "094122e0-c8ea-421c-a516-04235ecea279",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dfd40cd506e530cda67f68db5d40ba068026f23d4480b016da93797e0f70ab92"
+  },
+  "nodeGroups": [],
+  "id": "62G5v0R7bjOLm30a",
+  "tags": []
+}

@@ -1,0 +1,189 @@
+{
+  "name": "Daily & Monthly Financial Recap",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 21
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.3,
+      "position": [
+        -208,
+        -16
+      ],
+      "id": "8d230871-248d-482e-80b6-0f7224adddfd",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "11tY0P2X0O0Ndcz-2Ri6ghWnHuSf-XSCLGvZivWRQtvE",
+          "mode": "list",
+          "cachedResultName": "Sheet - Telegram Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11tY0P2X0O0Ndcz-2Ri6ghWnHuSf-XSCLGvZivWRQtvE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 1057235329,
+          "mode": "list",
+          "cachedResultName": "Budgeting/Month",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11tY0P2X0O0Ndcz-2Ri6ghWnHuSf-XSCLGvZivWRQtvE/edit#gid=1057235329"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        80,
+        -16
+      ],
+      "id": "671c1a6a-699a-4491-88e0-bfbad1eae625",
+      "name": "get_budget",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PzdpmAhc0Wop7hS9",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "// Mengambil data berdasarkan nama node kamu di screenshot\nconst budgets = $('get_budget').all().map(i => i.json);\nconst transactions = $('get_expenses').all().map(i => i.json);\n\n// 1. Simpan batas budget per kategori\nconst budgetMap = {};\nfor (const b of budgets) {\n  if (b.category && b.monthly_limit) {\n    budgetMap[b.category.toString().trim()] = Number(b.monthly_limit) || 0;\n  }\n}\n\n// 2. Format Tanggal Hari Ini & Bulan Ini\nconst now = new Date();\nconst todayStr = now.toISOString().split('T')[0];\nconst currentMonthStr = todayStr.substring(0, 7); // Format: YYYY-MM\n\nlet todayExpense = 0;\nlet monthExpense = 0;\nlet monthIncome = 0;\nlet categoryTotals = {};\n\n// 3. Agregasi Transaksi\nfor (const row of transactions) {\n  const date = (row.date || '').toString().trim();\n  const type = (row.type || '').toLowerCase().trim();\n  const value = Number(row.value) || 0;\n  const category = (row.category || 'Others').toString().trim();\n\n  // Rekap Bulan Ini\n  if (date.startsWith(currentMonthStr)) {\n    if (type === 'expense') {\n      monthExpense += value;\n      categoryTotals[category] = (categoryTotals[category] || 0) + value;\n    } else if (type === 'income') {\n      monthIncome += value;\n    }\n  }\n\n  // Rekap Hari Ini\n  if (date === todayStr && type === 'expense') {\n    todayExpense += value;\n  }\n}\n\nconst formatRp = (num) => 'Rp ' + Number(num).toLocaleString('id-ID');\n\n// 4. QuickChart Doughnut\nconst labels = Object.keys(categoryTotals);\nconst data = Object.values(categoryTotals);\n\nlet chartUrl = '';\nif (labels.length > 0) {\n  const chartConfig = {\n    type: 'doughnut',\n    data: {\n      labels: labels,\n      datasets: [{\n        data: data,\n        backgroundColor: ['#6366F1', '#EC4899', '#10B981', '#F59E0B', '#8B5CF6', '#3B82F6', '#EF4444']\n      }]\n    },\n    options: {\n      plugins: {\n        title: { display: true, text: `Pengeluaran ${currentMonthStr}` }\n      }\n    }\n  };\n  chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(JSON.stringify(chartConfig))}&w=500&h=300&bkg=white`;\n}\n\n// 5. Susun Pesan HTML Telegram\n\n// Ganti bagian pembentukan 'message' di script Code Node:\nlet budgetText = 'Belum ada catatan pengeluaran bulan ini.';\n\nif (labels.length > 0) {\n  const budgetLines = [];\n  for (const cat of labels) {\n    const spent = categoryTotals[cat];\n    const limit = budgetMap[cat] || 0;\n    \n    if (limit > 0) {\n      const pct = Math.round((spent / limit) * 100);\n      const icon = pct >= 100 ? '🚨' : pct >= 80 ? '⚠️' : '✅';\n      budgetLines.push(`${icon} ${cat}: ${formatRp(spent)} / ${formatRp(limit)} (${pct}%)`);\n    } else {\n      budgetLines.push(`• ${cat}: ${formatRp(spent)} (Tanpa limit)`);\n    }\n  }\n  budgetText = budgetLines.join('\\n');\n}\n\nconst chartSection = chartUrl ? `\\n📊 Grafik Pengeluaran:\\n${chartUrl}` : '';\n\n// String multiline murni tanpa \\n manual:\nconst message = `🌙 LAPORAN HARIAN & REKAP KEUANGAN\n━━━━━━━━━━━━━━━━━━━━━\n📅 Tanggal: ${todayStr}\n💸 Pengeluaran Hari Ini: ${formatRp(todayExpense)}\n\n📊 RINGKASAN BULAN INI (${currentMonthStr})\n├ 📈 Total Masuk: ${formatRp(monthIncome)}\n├ 📉 Total Keluar: ${formatRp(monthExpense)}\n└ 💎 Saldo Sisa: ${formatRp(monthIncome - monthExpense)}\n\n🎯 MONITORING ANGGARAN\n${budgetText}${chartSection}`;\n\nreturn [{ json: { message, chat_id: 1644304302 } }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        592,
+        -16
+      ],
+      "id": "ce1f5e04-13f5-4ff6-a44a-ba54c723ad60",
+      "name": "Calc Budget & Expenses"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "11tY0P2X0O0Ndcz-2Ri6ghWnHuSf-XSCLGvZivWRQtvE",
+          "mode": "list",
+          "cachedResultName": "Sheet - Telegram Agent",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11tY0P2X0O0Ndcz-2Ri6ghWnHuSf-XSCLGvZivWRQtvE/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/11tY0P2X0O0Ndcz-2Ri6ghWnHuSf-XSCLGvZivWRQtvE/edit#gid=0"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        320,
+        -16
+      ],
+      "id": "e2ba990f-c976-4309-aec3-122604504f91",
+      "name": "get_expenses",
+      "executeOnce": true,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "PzdpmAhc0Wop7hS9",
+          "name": "Google Sheets account 2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "chatId": "={{ $json.chat_id }}",
+        "text": "={{ $json.message }}",
+        "additionalFields": {
+          "appendAttribution": false
+        }
+      },
+      "type": "n8n-nodes-base.telegram",
+      "typeVersion": 1.2,
+      "position": [
+        832,
+        -16
+      ],
+      "id": "59b1aff1-8dde-4d04-8207-c86910a72df1",
+      "name": "Send a text message",
+      "webhookId": "6bdf5e46-b5ac-4fa3-90d0-ad468f58a43b",
+      "credentials": {
+        "telegramApi": {
+          "id": "yaRp5q17mnGuLHF8",
+          "name": "Telegram account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "get_budget",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_budget": {
+      "main": [
+        [
+          {
+            "node": "get_expenses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Calc Budget & Expenses": {
+      "main": [
+        [
+          {
+            "node": "Send a text message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "get_expenses": {
+      "main": [
+        [
+          {
+            "node": "Calc Budget & Expenses",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": false
+  },
+  "versionId": "0a9d782b-cf55-401a-8513-e827e1858d10",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "dfd40cd506e530cda67f68db5d40ba068026f23d4480b016da93797e0f70ab92"
+  },
+  "nodeGroups": [],
+  "id": "FcZlb7NayCnfaqQd",
+  "tags": []
+}
