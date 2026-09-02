@@ -1,4 +1,4 @@
-# AI Financial Copilot (Telegram Bot + n8n)
+# AI Financial Copilot (Telegram Bot + n8n + Web Dashboard)
 
 An intelligent, modular personal finance ecosystem powered by **n8n**, **Google Gemini**, **Supabase (PostgreSQL)**, **Google Sheets**, and **Next.js 14**. It automates multi-modal expense tracking, voice/receipt ingestion, dual-database logging, dynamic web analytics sync, and delivers automated scheduled financial health reports directly to your Telegram.
 
