@@ -70,9 +70,9 @@ flowchart LR
 ### 3. Real-Time Web Synchronization Flow (Next.js + Supabase)
 ```mermaid
 flowchart LR
-    Agent["🤖 n8n / Gemini Agent"] -->|1. Insert Transaction| Supabase[("⚡ Supabase PostgreSQL")]
-    Supabase -->|2. WebSocket Event| Realtime["📡 Supabase Realtime Channel"]
-    Realtime -->|3. Live State Push| WebApp["💻 Next.js 14 Web Dashboard"]
+    Agent[" n8n / Gemini Agent"] -->|1. Insert Transaction| Supabase[(" Supabase PostgreSQL")]
+    Supabase -->|2. WebSocket Event| Realtime[" Supabase Realtime Channel"]
+    Realtime -->|3. Live State Push| WebApp[" Next.js 14 Web Dashboard"]
 ```
 
 
